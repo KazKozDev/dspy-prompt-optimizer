@@ -4,6 +4,8 @@
 
 Task description + examples → Agent builds DSPy pipeline → Optimized prompts + Python code.
 
+<img width="1161" height="947" alt="Screenshot 2025-12-14 at 23 03 57" src="https://github.com/user-attachments/assets/971d5c98-cc4f-4ec6-b675-93b759fc8de4" />
+
 ---
 
 ## Agent Architecture
