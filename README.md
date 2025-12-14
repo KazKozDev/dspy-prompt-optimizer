@@ -57,6 +57,8 @@ OpenAI, Anthropic, Google Gemini, Ollama (local). Models fetched dynamically fro
 
 ---
 
-## License
+If you like this project, please give it a star ⭐
 
-MIT
+For questions, feedback, or support, reach out to:
+
+[Artem KK](https://www.linkedin.com/in/kazkozdev/) | MIT [LICENSE](LICENSE)
