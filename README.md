@@ -9,10 +9,26 @@ Automated prompt engineering for production LLM applications.
 DSPy Prompt Optimizer transforms how you build LLM applications. Instead of manual prompt engineering, define your task and provide examples — the system automatically discovers optimal prompts through systematic experimentation.
 
 **Key capabilities:**
+- **Intelligent Agent Orchestration**: LangChain-based agent autonomously analyzes your task, selects optimal DSPy modules, and iteratively refines prompts using ReAct reasoning
 - Automated prompt optimization using Stanford's DSPy framework
 - Support for OpenAI, Anthropic, Google Gemini, and local Ollama models
-- Real-time optimization progress with ReAct reasoning steps
+- Real-time optimization progress with step-by-step agent reasoning
 - Export production-ready Python code
+
+---
+
+## How It Works
+
+The system uses an **AI agent** to intelligently orchestrate the DSPy optimization process:
+
+1. **Task Analysis** — Agent analyzes your business task to determine complexity, domain, and optimal approach
+2. **Signature Generation** — Automatically creates DSPy Signature with appropriate input/output fields
+3. **Module Selection** — Chooses the best DSPy module (Predict, ChainOfThought, ReAct) based on task requirements
+4. **Optimizer Selection** — Picks optimal optimizer (BootstrapFewShot, MIPROv2, COPRO) based on dataset size and quality goals
+5. **Iterative Optimization** — Runs DSPy compilation with real-time progress streaming
+6. **Evaluation & Export** — Evaluates results and generates production-ready Python code
+
+The agent makes decisions at each step, adapting the optimization strategy based on intermediate results.
 
 ---
 
