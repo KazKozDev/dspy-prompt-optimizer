@@ -43,24 +43,32 @@ class BaseLLMProvider(ABC):
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI API provider."""
     
-    MODELS = [
-        "gpt-4o",
-        "gpt-4o-mini", 
-        "gpt-4-turbo",
-        "gpt-4",
-        "gpt-3.5-turbo",
-        "o1-preview",
-        "o1-mini",
-    ]
-    
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
     
     async def list_models(self) -> List[str]:
-        """Return available OpenAI models."""
+        """Fetch available models from OpenAI API."""
         if not self.api_key:
             return []
-        return self.MODELS
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://api.openai.com/v1/models",
+                    headers={"Authorization": f"Bearer {self.api_key}"}
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    models = []
+                    for model in data.get("data", []):
+                        model_id = model.get("id", "")
+                        # Filter for chat models
+                        if any(x in model_id for x in ["gpt-", "o1", "o3", "chatgpt"]):
+                            models.append(model_id)
+                    return sorted(models)
+                return []
+        except Exception as e:
+            print(f"OpenAI API error: {e}")
+            return []
     
     async def generate(self, prompt: str, model: str = "gpt-4o-mini", **kwargs) -> str:
         """Generate using OpenAI API."""
@@ -80,21 +88,30 @@ class OpenAIProvider(BaseLLMProvider):
 class AnthropicProvider(BaseLLMProvider):
     """Anthropic Claude API provider."""
     
-    MODELS = [
-        "claude-3-5-sonnet-20241022",
-        "claude-3-5-haiku-20241022",
-        "claude-3-opus-20240229",
-        "claude-3-sonnet-20240229",
-    ]
-    
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
     
     async def list_models(self) -> List[str]:
-        """Return available Anthropic models."""
+        """Fetch available models from Anthropic API."""
         if not self.api_key:
             return []
-        return self.MODELS
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://api.anthropic.com/v1/models",
+                    headers={
+                        "x-api-key": self.api_key,
+                        "anthropic-version": "2023-06-01"
+                    }
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    models = [model.get("id") for model in data.get("data", []) if model.get("id")]
+                    return sorted(models)
+                return []
+        except Exception as e:
+            print(f"Anthropic API error: {e}")
+            return []
     
     async def generate(self, prompt: str, model: str = "claude-3-5-sonnet-20241022", **kwargs) -> str:
         """Generate using Anthropic API."""
@@ -114,20 +131,34 @@ class AnthropicProvider(BaseLLMProvider):
 class GeminiProvider(BaseLLMProvider):
     """Google Gemini API provider."""
     
-    MODELS = [
-        "gemini-1.5-pro",
-        "gemini-1.5-flash",
-        "gemini-2.0-flash-exp",
-    ]
-    
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
     
     async def list_models(self) -> List[str]:
-        """Return available Gemini models."""
+        """Fetch available models from Google Gemini API."""
         if not self.api_key:
             return []
-        return self.MODELS
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"https://generativelanguage.googleapis.com/v1beta/models?key={self.api_key}"
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    models = []
+                    for model in data.get("models", []):
+                        name = model.get("name", "")
+                        # Extract model ID from "models/gemini-1.5-pro"
+                        if name.startswith("models/"):
+                            model_id = name.replace("models/", "")
+                            # Filter for generative models
+                            if "generateContent" in model.get("supportedGenerationMethods", []):
+                                models.append(model_id)
+                    return sorted(models)
+                return []
+        except Exception as e:
+            print(f"Gemini API error: {e}")
+            return []
     
     async def generate(self, prompt: str, model: str = "gemini-1.5-flash", **kwargs) -> str:
         """Generate using Gemini API."""
