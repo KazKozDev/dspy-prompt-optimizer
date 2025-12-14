@@ -33,7 +33,7 @@ class OrchestratorRequest(BaseModel):
     """Request for DSPy orchestration."""
     business_task: str = Field(..., description="Description of the task to optimize")
     target_lm: str = Field(..., description="Target LLM for inference (e.g., openai/gpt-4o)")
-    optimizer_lm: str = Field(default="openai/gpt-4o-mini", description="LLM for optimization process")
+    optimizer_lm: str = Field(default="openai/gpt-5-mini", description="LLM for optimization process")
     dataset: List[Dict[str, str]] = Field(..., description="Training examples [{input, output}]")
     quality_profile: str = Field(default="BALANCED", description="FAST_CHEAP, BALANCED, HIGH_QUALITY")
     optimizer_strategy: str = Field(default="auto", description="Optimizer: auto, BootstrapFewShot, MIPROv2, COPRO")

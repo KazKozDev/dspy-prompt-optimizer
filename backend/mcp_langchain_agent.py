@@ -551,7 +551,7 @@ Return a JSON object with:
 
 Return ONLY valid JSON, no markdown or explanation."""
 
-    def __init__(self, agent_model: str = "openai/gpt-4o-mini"):
+    def __init__(self, agent_model: str = "openai/gpt-5-mini"):
         if "/" in agent_model:
             provider, model = agent_model.split("/", 1)
         else:

@@ -163,7 +163,7 @@ class DSPyLangChainAgent:
     
     def __init__(
         self,
-        agent_model: str = "openai/gpt-4o-mini",
+        agent_model: str = "openai/gpt-5-mini",
         temperature: float = 0.2,
         max_iterations: int = 20,
         artifacts_dir: str = "data/artifacts",
@@ -523,7 +523,7 @@ Return ONLY valid JSON, no markdown."""
                 dspy_mod, BootstrapFewShot, BootstrapFewShotWithRandomSearch, MIPROv2, COPRO = _load_dspy()
                 
                 # Configure DSPy with target LM
-                target_lm = self.state.target_lm or "openai/gpt-4o-mini"
+                target_lm = self.state.target_lm or "openai/gpt-5-mini"
                 if "/" in target_lm:
                     provider, model_name = target_lm.split("/", 1)
                 else:

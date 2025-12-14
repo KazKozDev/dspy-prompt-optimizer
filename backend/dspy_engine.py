@@ -89,7 +89,7 @@ class DSPyEngine:
     
     def __init__(
         self,
-        optimizer_model: str = "openai/gpt-4o-mini",
+        optimizer_model: str = "openai/gpt-5-mini",
         artifacts_dir: str = "data/artifacts"
     ):
         self.optimizer_model = optimizer_model

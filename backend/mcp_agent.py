@@ -106,7 +106,7 @@ Metric selection guide:
 
 Return ONLY valid JSON."""
 
-    def __init__(self, agent_model: str = "openai/gpt-4o-mini"):
+    def __init__(self, agent_model: str = "openai/gpt-5-mini"):
         # Parse model
         if "/" in agent_model:
             provider, model = agent_model.split("/", 1)

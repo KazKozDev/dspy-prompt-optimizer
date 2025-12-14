@@ -31,6 +31,8 @@ Agent decides each step based on task analysis and intermediate results. Adapts 
 
 ## Quick Start
 
+### Manual
+
 ```bash
 # Backend
 cd backend && python -m venv venv && source venv/bin/activate
@@ -42,6 +44,10 @@ cd frontend && npm install && npm run dev
 ```
 
 Open http://localhost:5173 → Describe task → Add examples → Run.
+
+### macOS (Double-Click)
+
+Double-click `DSPy Optimizer.command` — it installs dependencies and starts both backend and frontend automatically. Browser opens at http://localhost:5173.
 
 ---
 

@@ -165,7 +165,7 @@ function App() {
       setTargetLM(allModels[0].value);
     }
     if (allModels.length > 0 && !optimizerLM) {
-      const defaultOptimizer = allModels.find(m => m.value.includes('gpt-4o-mini'));
+      const defaultOptimizer = allModels.find(m => m.value.includes('gpt-5-mini'));
       setOptimizerLM(defaultOptimizer?.value || allModels[0].value);
     }
   };

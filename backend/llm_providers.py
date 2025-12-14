@@ -61,16 +61,21 @@ class OpenAIProvider(BaseLLMProvider):
                     models = []
                     for model in data.get("data", []):
                         model_id = model.get("id", "")
-                        # Filter for chat models
-                        if any(x in model_id for x in ["gpt-", "o1", "o3", "chatgpt"]):
-                            models.append(model_id)
-                    return sorted(models)
+                        # GPT-5 series only: gpt-5, gpt-5-mini, gpt-5-nano, gpt-5.1
+                        if "gpt-5" in model_id:
+                            # Exclude non-chat variants
+                            if not any(x in model_id for x in [
+                                "realtime", "audio", "transcribe", "tts", 
+                                "search", "embedding", "moderation"
+                            ]):
+                                models.append(model_id)
+                    return sorted(models, reverse=True)
                 return []
         except Exception as e:
             print(f"OpenAI API error: {e}")
             return []
     
-    async def generate(self, prompt: str, model: str = "gpt-4o-mini", **kwargs) -> str:
+    async def generate(self, prompt: str, model: str = "gpt-5-mini", **kwargs) -> str:
         """Generate using OpenAI API."""
         import openai
         client = openai.AsyncOpenAI(api_key=self.api_key)
