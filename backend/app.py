@@ -27,6 +27,13 @@ from langchain_agent import DSPyLangChainAgent
 from mcp_agent import DSPyMCPAgent
 from hf_dataset_provider import search_hf_datasets, import_hf_dataset, inspect_hf_dataset
 
+# New Hybrid Engine with Meta-Agent
+try:
+    from hybrid_engine import HybridDSPyEngine
+    HYBRID_ENGINE_AVAILABLE = True
+except ImportError:
+    HYBRID_ENGINE_AVAILABLE = False
+
 # ==================== Pydantic Models ====================
 
 class OrchestratorRequest(BaseModel):
@@ -38,6 +45,10 @@ class OrchestratorRequest(BaseModel):
     quality_profile: str = Field(default="BALANCED", description="FAST_CHEAP, BALANCED, HIGH_QUALITY")
     optimizer_strategy: str = Field(default="auto", description="Optimizer: auto, BootstrapFewShot, MIPROv2, COPRO")
     use_agent: bool = Field(default=True, description="Use LangChain agent for intelligent orchestration")
+    # New Hybrid Mode fields
+    mode: str = Field(default="auto", description="Mode: auto (agent decides) or manual (user overrides)")
+    use_hybrid: bool = Field(default=False, description="Use new Hybrid Engine with Meta-Agent")
+    manual_overrides: Optional[Dict[str, Any]] = Field(default=None, description="Manual configuration overrides")
 
 
 class TestArtifactRequest(BaseModel):
@@ -124,13 +135,36 @@ async def orchestrate_dspy(request: OrchestratorRequest):
     """
     Run DSPy orchestration with streaming updates.
     Returns Server-Sent Events with step updates.
-    Uses LangChain agent for intelligent orchestration when use_agent=True.
+    
+    Supports three modes:
+    1. use_hybrid=True: New Hybrid Engine with Meta-Agent (AUTO/MANUAL modes)
+    2. use_agent=True: Legacy MCP-based agent
+    3. use_agent=False: Simple DSPyEngine
     """
-    print(f"[ORCHESTRATE] use_agent={request.use_agent}, optimizer_lm={request.optimizer_lm}")
+    print(f"[ORCHESTRATE] use_hybrid={request.use_hybrid}, use_agent={request.use_agent}, mode={request.mode}")
+    
     async def event_generator():
         try:
-            if request.use_agent:
-                # Use MCP-based agent for intelligent orchestration
+            if request.use_hybrid and HYBRID_ENGINE_AVAILABLE:
+                # NEW: Use Hybrid Engine with Meta-Agent
+                print(f"[ORCHESTRATE] Using HybridDSPyEngine in {request.mode} mode...")
+                engine = HybridDSPyEngine(
+                    optimizer_model=request.optimizer_lm,
+                    artifacts_dir="data/artifacts"
+                )
+                
+                async for event in engine.run_async(
+                    business_task=request.business_task,
+                    target_lm=request.target_lm,
+                    dataset=request.dataset,
+                    quality_profile=request.quality_profile,
+                    mode=request.mode,
+                    manual_overrides=request.manual_overrides
+                ):
+                    yield f"data: {json.dumps(event, default=str)}\n\n"
+            
+            elif request.use_agent:
+                # Legacy: Use MCP-based agent for intelligent orchestration
                 print("[ORCHESTRATE] Using DSPyMCPAgent...")
                 agent = DSPyMCPAgent(
                     agent_model=request.optimizer_lm
@@ -144,7 +178,7 @@ async def orchestrate_dspy(request: OrchestratorRequest):
                 ):
                     yield f"data: {json.dumps(event)}\n\n"
             else:
-                # Use simple DSPyEngine (no agent)
+                # Legacy: Use simple DSPyEngine (no agent)
                 engine = DSPyEngine(
                     optimizer_model=request.optimizer_lm,
                     artifacts_dir="data/artifacts"
@@ -159,6 +193,8 @@ async def orchestrate_dspy(request: OrchestratorRequest):
                 ):
                     yield f"data: {json.dumps(event)}\n\n"
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             error_event = {
                 "type": "error",
                 "error": str(e)
@@ -293,6 +329,156 @@ async def import_hf_catalog_dataset(payload: Dict[str, Any]):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Hybrid Engine API Endpoints ====================
+
+@app.get("/api/hybrid/templates")
+async def list_pipeline_templates():
+    """List available pipeline templates for manual configuration."""
+    try:
+        from pipelines.templates import list_templates
+        templates = list_templates()
+        return {"templates": templates}
+    except ImportError:
+        return {"templates": [], "error": "Pipeline templates not available"}
+
+
+@app.get("/api/hybrid/tools")
+async def list_available_tools():
+    """List available tools for ReAct agents."""
+    try:
+        from tools.builtin import register_all_builtin_tools
+        from tools.registry import get_registry
+        
+        register_all_builtin_tools()
+        registry = get_registry()
+        tools = registry.list_tools()
+        return {"tools": tools}
+    except ImportError:
+        return {"tools": [], "error": "Tools not available"}
+
+
+@app.get("/api/hybrid/metrics")
+async def list_available_metrics():
+    """List available evaluation metrics."""
+    metrics = [
+        {
+            "type": "exact_match",
+            "name": "Exact Match",
+            "description": "Exact string match between prediction and expected output",
+            "best_for": ["classification", "routing", "labeling"]
+        },
+        {
+            "type": "token_f1",
+            "name": "Token F1",
+            "description": "Token-level F1 score for partial matches",
+            "best_for": ["extraction", "QA", "summarization"]
+        },
+        {
+            "type": "semantic_similarity",
+            "name": "Semantic Similarity",
+            "description": "Embedding-based semantic similarity",
+            "best_for": ["paraphrase", "generation", "summarization"],
+            "requires": "sentence-transformers"
+        },
+        {
+            "type": "llm_judge",
+            "name": "LLM-as-Judge",
+            "description": "Use LLM to evaluate response quality",
+            "best_for": ["generation", "reasoning", "complex tasks"],
+            "subtypes": ["correctness", "faithfulness", "coherence", "custom"]
+        }
+    ]
+    return {"metrics": metrics}
+
+
+@app.get("/api/hybrid/optimizers")
+async def list_available_optimizers():
+    """List available DSPy optimizers."""
+    optimizers = [
+        {
+            "type": "BootstrapFewShot",
+            "name": "Bootstrap Few-Shot",
+            "description": "Fast, works with 10-50 examples",
+            "min_examples": 10,
+            "speed": "fast"
+        },
+        {
+            "type": "BootstrapFewShotWithRandomSearch",
+            "name": "Bootstrap + Random Search",
+            "description": "Better quality, needs 20+ examples",
+            "min_examples": 20,
+            "speed": "medium"
+        },
+        {
+            "type": "MIPROv2",
+            "name": "MIPRO v2",
+            "description": "Best quality, needs 50+ examples",
+            "min_examples": 50,
+            "speed": "slow"
+        },
+        {
+            "type": "COPRO",
+            "name": "COPRO",
+            "description": "Instruction optimization",
+            "min_examples": 30,
+            "speed": "medium"
+        }
+    ]
+    return {"optimizers": optimizers}
+
+
+@app.post("/api/hybrid/analyze")
+async def analyze_task(payload: Dict[str, Any]):
+    """Analyze a task without running optimization.
+    
+    Returns agent's analysis and recommended configuration.
+    """
+    business_task = payload.get("business_task", "")
+    dataset = payload.get("dataset", [])
+    
+    if not business_task:
+        raise HTTPException(status_code=400, detail="business_task is required")
+    
+    try:
+        from agent import MetaAgent
+        
+        agent = MetaAgent()
+        config = agent.configure(
+            business_task=business_task,
+            target_model="",
+            dataset=dataset,
+            quality_profile="BALANCED",
+            mode="auto"
+        )
+        
+        summary = agent.get_configuration_summary(config)
+        warnings = agent.validate_config(config)
+        
+        return {
+            "analysis": summary,
+            "warnings": warnings,
+            "reasoning": config.agent_reasoning
+        }
+    except ImportError as e:
+        raise HTTPException(status_code=500, detail=f"Meta-Agent not available: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/hybrid/status")
+async def hybrid_engine_status():
+    """Check if Hybrid Engine is available."""
+    return {
+        "available": HYBRID_ENGINE_AVAILABLE,
+        "features": {
+            "meta_agent": HYBRID_ENGINE_AVAILABLE,
+            "llm_judge": HYBRID_ENGINE_AVAILABLE,
+            "multi_stage_pipelines": HYBRID_ENGINE_AVAILABLE,
+            "react_tools": HYBRID_ENGINE_AVAILABLE
+        }
+    }
 
 
 if __name__ == "__main__":

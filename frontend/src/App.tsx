@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Settings, Play, Download, Copy, Check, Database, Cpu, AlertCircle, Sparkles, FlaskConical, Rocket, Search, X } from 'lucide-react';
+import { Settings, Play, Download, Copy, Check, Database, Cpu, AlertCircle, Sparkles, FlaskConical, Rocket, Search, X, HelpCircle } from 'lucide-react';
 
 // Custom DSPy Logo Component
 const DSPyLogo = ({ className = "w-12 h-12" }: { className?: string }) => (
@@ -67,6 +67,22 @@ function App() {
   const [qualityProfile, setQualityProfile] = useState('BALANCED');
   const [optimizerStrategy, setOptimizerStrategy] = useState('auto');
   const [useAgent, setUseAgent] = useState(true);
+  
+  // Hybrid Engine state
+  const [useHybrid, setUseHybrid] = useState(true);
+  const [hybridMode, setHybridMode] = useState<'auto' | 'manual'>('auto');
+  const [selectedMetric, setSelectedMetric] = useState('auto');
+  const [selectedPipeline, setSelectedPipeline] = useState('auto');
+  
+  // Advanced config state
+  const [selectedTools, setSelectedTools] = useState<string[]>(['calculator', 'web_search']);
+  const [llmJudgeModel, setLlmJudgeModel] = useState('openai/gpt-5-mini');
+  const [llmJudgeCriteria, setLlmJudgeCriteria] = useState('');
+  const [ragRetrieverType, setRagRetrieverType] = useState('faiss');
+  const [ragTopK, setRagTopK] = useState(5);
+  const [enableDistillation, setEnableDistillation] = useState(false);
+  const [teacherModel, setTeacherModel] = useState('openai/gpt-5');
+  const [distillSamples, setDistillSamples] = useState(100);
 
   // Input state
   const [businessTask, setBusinessTask] = useState('');
@@ -86,6 +102,9 @@ function App() {
   const [testOutput, setTestOutput] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null);
+
+  // Help modal state
+  const [showHelp, setShowHelp] = useState(false);
 
   // HuggingFace import state
   const [showHFModal, setShowHFModal] = useState(false);
@@ -250,6 +269,22 @@ function App() {
         quality_profile: qualityProfile,
         optimizer_strategy: optimizerStrategy,
         use_agent: useAgent,
+        // Hybrid Engine fields
+        use_hybrid: useHybrid,
+        mode: hybridMode,
+        manual_overrides: hybridMode === 'manual' ? {
+          metric_type: selectedMetric !== 'auto' ? selectedMetric : undefined,
+          pipeline_type: selectedPipeline !== 'auto' ? selectedPipeline : undefined,
+          tools: selectedPipeline === 'react' ? selectedTools : undefined,
+          llm_judge_model: selectedMetric === 'llm_judge' ? llmJudgeModel : undefined,
+          llm_judge_criteria: selectedMetric === 'llm_judge' && llmJudgeCriteria ? llmJudgeCriteria : undefined,
+          enable_rag: selectedPipeline === 'rag' || undefined,
+          retriever_type: selectedPipeline === 'rag' ? ragRetrieverType : undefined,
+          retriever_k: selectedPipeline === 'rag' ? ragTopK : undefined,
+          enable_distillation: enableDistillation || undefined,
+          teacher_model: enableDistillation ? teacherModel : undefined,
+          distillation_samples: enableDistillation ? distillSamples : undefined,
+        } : undefined,
       },
       {
         onStep: (step) => {
@@ -479,14 +514,124 @@ function App() {
               <p className="text-xs text-white/40">Automated prompt engineering</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-          >
-            <Settings className="w-5 h-5 text-white/60" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowHelp(true)}
+              className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+              title="Help & Instructions"
+            >
+              <HelpCircle className="w-5 h-5 text-white/60" />
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <Settings className="w-5 h-5 text-white/60" />
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-800 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <h2 className="text-lg font-semibold">Quick Start Guide</h2>
+              <button onClick={() => setShowHelp(false)} className="p-1 hover:bg-white/10 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-6 text-sm">
+              {/* Step 1 */}
+              <div>
+                <h3 className="text-purple-400 font-semibold mb-2">1. Configure API Keys</h3>
+                <p className="text-white/60">Click the <Settings className="w-4 h-4 inline" /> icon and enter your API keys (OpenAI, Anthropic, or Google). For local models, install Ollama.</p>
+              </div>
+
+              {/* Step 2 */}
+              <div>
+                <h3 className="text-purple-400 font-semibold mb-2">2. Select Models</h3>
+                <ul className="text-white/60 space-y-1 ml-4 list-disc">
+                  <li><strong>Target Model</strong> — for production inference (can be smaller/cheaper)</li>
+                  <li><strong>Optimizer Model</strong> — for prompt optimization (use GPT-5 or Claude)</li>
+                </ul>
+              </div>
+
+              {/* Step 3 */}
+              <div>
+                <h3 className="text-purple-400 font-semibold mb-2">3. Describe Your Task</h3>
+                <p className="text-white/60">Write a clear description of what you want the model to do. Example: "Classify customer reviews as positive, negative, or neutral with explanation."</p>
+              </div>
+
+              {/* Step 4 */}
+              <div>
+                <h3 className="text-purple-400 font-semibold mb-2">4. Provide Dataset</h3>
+                <p className="text-white/60 mb-2">Add training examples as JSON array:</p>
+                <code className="block bg-black/30 p-2 rounded text-xs text-emerald-400">[{'{"input": "Great product!", "output": "positive"}'}, ...]</code>
+                <p className="text-white/40 text-xs mt-2">Or click "Import from HuggingFace" to load existing datasets.</p>
+              </div>
+
+              {/* Step 5 */}
+              <div>
+                <h3 className="text-purple-400 font-semibold mb-2">5. Configure Engine</h3>
+                <ul className="text-white/60 space-y-1 ml-4 list-disc">
+                  <li><strong>Hybrid Engine ON</strong> — Meta-Agent auto-configures pipeline, metric, optimizer</li>
+                  <li><strong>Auto mode</strong> — Agent decides everything based on task analysis</li>
+                  <li><strong>Manual mode</strong> — You choose pipeline, metric, and advanced options</li>
+                </ul>
+              </div>
+
+              {/* Step 6 */}
+              <div>
+                <h3 className="text-purple-400 font-semibold mb-2">6. Run Optimization</h3>
+                <p className="text-white/60">Click "Run Optimization" and watch the ReAct steps. The agent will analyze your task, build a pipeline, and optimize prompts using DSPy.</p>
+              </div>
+
+              {/* Pipelines */}
+              <div className="border-t border-white/10 pt-4">
+                <h3 className="text-blue-400 font-semibold mb-2">Pipelines</h3>
+                <div className="space-y-1 text-xs text-white/50">
+                  <div><strong className="text-white/70">Predict</strong> — Simple input→output</div>
+                  <div><strong className="text-white/70">CoT</strong> — Chain-of-Thought reasoning</div>
+                  <div><strong className="text-white/70">ReAct</strong> — Agent with tools (Calculator, Web Search, Python, Wikipedia)</div>
+                  <div><strong className="text-white/70">RAG</strong> — Retrieval-Augmented Generation with FAISS/ChromaDB</div>
+                </div>
+              </div>
+
+              {/* Metrics */}
+              <div className="border-t border-white/10 pt-4">
+                <h3 className="text-blue-400 font-semibold mb-2">Metrics</h3>
+                <div className="space-y-1 text-xs text-white/50">
+                  <div><strong className="text-white/70">Exact Match</strong> — For classification, short answers</div>
+                  <div><strong className="text-white/70">Token F1</strong> — For extraction, partial matches</div>
+                  <div><strong className="text-white/70">LLM Judge</strong> — GPT-5/Claude evaluates quality with custom criteria</div>
+                </div>
+              </div>
+
+              {/* Advanced */}
+              <div className="border-t border-white/10 pt-4">
+                <h3 className="text-blue-400 font-semibold mb-2">Advanced Options</h3>
+                <div className="space-y-1 text-xs text-white/50">
+                  <div><strong className="text-white/70">Distillation</strong> — Generate training data from GPT-5/Claude (Teacher→Student)</div>
+                  <div><strong className="text-white/70">Custom Criteria</strong> — Define evaluation rules for LLM Judge</div>
+                  <div><strong className="text-white/70">RAG Top-K</strong> — Number of retrieved documents (1-20)</div>
+                </div>
+              </div>
+
+              {/* Quality Profiles */}
+              <div className="border-t border-white/10 pt-4">
+                <h3 className="text-blue-400 font-semibold mb-2">Quality Profiles</h3>
+                <ul className="text-white/60 space-y-1 text-xs">
+                  <li><strong>Fast</strong> — Quick prototyping, minimal iterations</li>
+                  <li><strong>Balanced</strong> — Best for most use cases (recommended)</li>
+                  <li><strong>Quality</strong> — Maximum optimization, needs 50+ examples</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Settings Modal */}
       {showSettings && (
@@ -630,27 +775,253 @@ function App() {
               </p>
             </div>
 
-            {/* LangChain Agent Toggle */}
-            <div className="bg-dark-800 border border-white/10 rounded-xl p-4">
+            {/* Hybrid Engine Toggle */}
+            <div className={`border rounded-xl p-4 ${useHybrid ? 'bg-purple-500/5 border-purple-500/20' : 'bg-dark-800 border-white/10'}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-medium text-white/60 uppercase tracking-wider">LangChain Agent</span>
+                  <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Hybrid Engine</span>
                   <p className="text-[10px] text-white/30 mt-1">
-                    {useAgent ? 'Agent analyzes task and configures DSPy' : 'Direct DSPy optimization'}
+                    {useHybrid ? 'Meta-Agent auto-configures everything' : 'Legacy mode'}
                   </p>
                 </div>
                 <button
-                  onClick={() => setUseAgent(!useAgent)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${
-                    useAgent ? 'bg-emerald-500' : 'bg-white/20'
-                  }`}
+                  onClick={() => setUseHybrid(!useHybrid)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${useHybrid ? 'bg-purple-500' : 'bg-white/20'}`}
                 >
-                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                    useAgent ? 'left-6' : 'left-1'
-                  }`} />
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${useHybrid ? 'left-6' : 'left-1'}`} />
                 </button>
               </div>
+              
+              {/* Mode Toggle (Auto/Manual) */}
+              {useHybrid && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setHybridMode('auto')}
+                      className={`flex-1 px-3 py-1.5 text-xs rounded-lg border transition-all ${
+                        hybridMode === 'auto'
+                          ? 'bg-purple-500/20 border-purple-500/30 text-purple-300'
+                          : 'border-white/5 text-white/50 hover:bg-white/5'
+                      }`}
+                    >
+                      Auto
+                    </button>
+                    <button
+                      onClick={() => setHybridMode('manual')}
+                      className={`flex-1 px-3 py-1.5 text-xs rounded-lg border transition-all ${
+                        hybridMode === 'manual'
+                          ? 'bg-purple-500/20 border-purple-500/30 text-purple-300'
+                          : 'border-white/5 text-white/50 hover:bg-white/5'
+                      }`}
+                    >
+                      Manual
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-white/30 mt-2">
+                    {hybridMode === 'auto' ? 'Agent decides pipeline, metric, optimizer' : 'You configure everything'}
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* Manual Configuration (when Hybrid + Manual) - Contextual Options */}
+            {useHybrid && hybridMode === 'manual' && (
+              <>
+                {/* Pipeline Selection */}
+                <div className="bg-dark-800 border border-white/10 rounded-xl p-4">
+                  <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Pipeline</span>
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    {[
+                      { value: 'auto', label: 'Auto' },
+                      { value: 'predict', label: 'Predict' },
+                      { value: 'chain_of_thought', label: 'CoT' },
+                      { value: 'react', label: 'ReAct' },
+                      { value: 'rag', label: 'RAG' },
+                    ].map(p => (
+                      <button
+                        key={p.value}
+                        onClick={() => setSelectedPipeline(p.value)}
+                        className={`px-2 py-1.5 text-xs rounded-lg border transition-all ${
+                          selectedPipeline === p.value
+                            ? 'bg-white/10 border-white/20 text-white'
+                            : 'border-white/5 text-white/50 hover:bg-white/5'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tools Selection - Only for ReAct */}
+                {selectedPipeline === 'react' && (
+                  <div className="bg-dark-800 border border-white/10 rounded-xl p-4">
+                    <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Tools</span>
+                    <div className="mt-3 space-y-2">
+                      {[
+                        { id: 'calculator', label: 'Calculator' },
+                        { id: 'web_search', label: 'Web Search' },
+                        { id: 'python_repl', label: 'Python' },
+                        { id: 'wikipedia', label: 'Wikipedia' },
+                      ].map(tool => (
+                        <label key={tool.id} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedTools.includes(tool.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTools([...selectedTools, tool.id]);
+                              } else {
+                                setSelectedTools(selectedTools.filter(t => t !== tool.id));
+                              }
+                            }}
+                            className="w-3.5 h-3.5 rounded border-white/20 bg-black/30 text-purple-500"
+                          />
+                          <span className="text-xs text-white/70">{tool.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* RAG Config - Only for RAG pipeline */}
+                {selectedPipeline === 'rag' && (
+                  <div className="bg-dark-800 border border-white/10 rounded-xl p-4">
+                    <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Retriever</span>
+                    <select
+                      value={ragRetrieverType}
+                      onChange={(e) => setRagRetrieverType(e.target.value)}
+                      className="w-full mt-2 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none"
+                    >
+                      <option value="faiss">FAISS (fast)</option>
+                      <option value="chroma">ChromaDB</option>
+                    </select>
+                    <div className="mt-3">
+                      <label className="text-[10px] text-white/50">Top K: {ragTopK}</label>
+                      <input
+                        type="range"
+                        value={ragTopK}
+                        onChange={(e) => setRagTopK(Number(e.target.value))}
+                        min={1}
+                        max={20}
+                        className="w-full mt-1 accent-purple-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Metric Selection */}
+                <div className="bg-dark-800 border border-white/10 rounded-xl p-4">
+                  <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Metric</span>
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    {[
+                      { value: 'auto', label: 'Auto' },
+                      { value: 'exact_match', label: 'Exact' },
+                      { value: 'token_f1', label: 'F1' },
+                      { value: 'llm_judge', label: 'LLM Judge' },
+                    ].map(m => (
+                      <button
+                        key={m.value}
+                        onClick={() => setSelectedMetric(m.value)}
+                        className={`px-2 py-1.5 text-xs rounded-lg border transition-all ${
+                          selectedMetric === m.value
+                            ? 'bg-white/10 border-white/20 text-white'
+                            : 'border-white/5 text-white/50 hover:bg-white/5'
+                        }`}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* LLM Judge Config - Only when LLM Judge selected */}
+                {selectedMetric === 'llm_judge' && (
+                  <div className="bg-dark-800 border border-white/10 rounded-xl p-4">
+                    <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Judge Config</span>
+                    <select
+                      value={llmJudgeModel}
+                      onChange={(e) => setLlmJudgeModel(e.target.value)}
+                      className="w-full mt-2 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none"
+                    >
+                      <option value="openai/gpt-5-mini">GPT-5 Mini</option>
+                      <option value="openai/gpt-5">GPT-5</option>
+                      <option value="anthropic/claude-3-haiku-20240307">Claude Haiku</option>
+                    </select>
+                    <textarea
+                      value={llmJudgeCriteria}
+                      onChange={(e) => setLlmJudgeCriteria(e.target.value)}
+                      placeholder="Custom criteria (optional)"
+                      className="w-full mt-2 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs h-16 resize-none focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* Advanced: Distillation (collapsible) */}
+                <details className="bg-dark-800 border border-white/10 rounded-xl">
+                  <summary className="px-4 py-3 cursor-pointer text-xs font-medium text-white/60 uppercase tracking-wider hover:bg-white/5">
+                    ⚙️ Advanced
+                  </summary>
+                  <div className="px-4 pb-4 pt-2 border-t border-white/5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs text-white/80">Distillation</div>
+                        <div className="text-[10px] text-white/40">Teacher → Student</div>
+                      </div>
+                      <button
+                        onClick={() => setEnableDistillation(!enableDistillation)}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${enableDistillation ? 'bg-purple-500' : 'bg-white/20'}`}
+                      >
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enableDistillation ? 'left-5' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                    {enableDistillation && (
+                      <div className="mt-3 space-y-2">
+                        <select
+                          value={teacherModel}
+                          onChange={(e) => setTeacherModel(e.target.value)}
+                          className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none"
+                        >
+                          <option value="openai/gpt-5">GPT-5 (teacher)</option>
+                          <option value="anthropic/claude-3-5-sonnet-20241022">Claude Sonnet</option>
+                        </select>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-white/50">Samples:</span>
+                          <input
+                            type="number"
+                            value={distillSamples}
+                            onChange={(e) => setDistillSamples(Number(e.target.value))}
+                            min={10}
+                            max={500}
+                            className="flex-1 bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-xs focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </details>
+              </>
+            )}
+
+            {/* Legacy Agent Toggle (when not using Hybrid) */}
+            {!useHybrid && (
+              <div className="bg-dark-800 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-white/60 uppercase tracking-wider">LangChain Agent</span>
+                    <p className="text-[10px] text-white/30 mt-1">
+                      {useAgent ? 'Agent analyzes task and configures DSPy' : 'Direct DSPy optimization'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setUseAgent(!useAgent)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${useAgent ? 'bg-emerald-500' : 'bg-white/20'}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${useAgent ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Optimizer Strategy */}
             <div className="bg-dark-800 border border-white/10 rounded-xl p-4">

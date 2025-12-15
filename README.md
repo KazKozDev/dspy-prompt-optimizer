@@ -10,50 +10,115 @@ Task description + examples → Agent builds DSPy pipeline → Optimized prompts
 
 ---
 
-## Agent Architecture
+## Features
+
+- **Hybrid Engine** — Meta-Agent auto-configures pipeline, metrics, optimizer
+- **Multiple Pipelines** — Predict, Chain-of-Thought, ReAct, RAG
+- **ReAct Tools** — Calculator, Web Search, Python REPL, Wikipedia
+- **RAG/Retrieval** — FAISS and ChromaDB vector search
+- **LLM-as-Judge** — Evaluation via GPT-5/Claude with custom criteria
+- **Teacher-Student Distillation** — Generate training data from large models
+- **HuggingFace Import** — Load datasets directly from HF Hub
+
+---
+
+## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│       LangChain ReAct Agent         │
-├─────────────────────────────────────┤
-│ analyze_task      → task type       │
-│ create_signature  → DSPy Signature  │
-│ select_module     → Predict/CoT     │
-│ select_optimizer  → BootstrapFewShot│
-│ run_optimization  → DSPy compile    │
-│ export_program    → Python code     │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   Hybrid DSPy Engine                     │
+├─────────────────────────────────────────────────────────┤
+│  Meta-Agent (AUTO mode)        Manual Overrides          │
+│  ├─ TaskAnalyzer               ├─ Pipeline: Predict/CoT/ │
+│  ├─ PipelineSelector              ReAct/RAG              │
+│  ├─ MetricSelector             ├─ Metric: Exact/F1/      │
+│  ├─ OptimizerSelector             LLM Judge              │
+│  └─ ToolSelector               ├─ Tools: calc/search/... │
+│                                └─ Distillation: ON/OFF   │
+├─────────────────────────────────────────────────────────┤
+│  DSPy Compilation                                        │
+│  ├─ BootstrapFewShot / MIPROv2 / COPRO                  │
+│  ├─ Metric evaluation                                    │
+│  └─ Optimized program export                             │
+└─────────────────────────────────────────────────────────┘
 ```
 
-Agent decides each step based on task analysis and intermediate results. Adapts strategy if optimization fails or accuracy is low.
+**AUTO mode**: Agent analyzes task and configures everything automatically.  
+**MANUAL mode**: You choose pipeline, metric, tools, and advanced options.
 
 ---
 
 ## Quick Start
 
+### macOS (Double-Click)
+
+Double-click `DSPy Optimizer.command` — installs dependencies and starts both servers.
+
 ### Manual
 
 ```bash
 # Backend
-cd backend && python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt && echo "OPENAI_API_KEY=sk-..." > .env
+cd backend && pip install -r requirements.txt
+echo "OPENAI_API_KEY=sk-..." > .env
 python app.py
 
 # Frontend (new terminal)
 cd frontend && npm install && npm run dev
 ```
 
-Open http://localhost:5173 → Describe task → Add examples → Run.
+Open http://localhost:3000 → Configure API keys → Describe task → Add examples → Run.
 
-### macOS (Double-Click)
+---
 
-Double-click `DSPy Optimizer.command` — it installs dependencies and starts both backend and frontend automatically. Browser opens at http://localhost:5173.
+## Modes & Options
+
+| Mode | Pipeline | What it does |
+|------|----------|--------------|
+| Auto | Agent decides | Analyzes task, picks best pipeline/metric/optimizer |
+| Predict | `dspy.Predict` | Simple input→output |
+| CoT | `dspy.ChainOfThought` | Step-by-step reasoning |
+| ReAct | `dspy.ReAct` | Agent with tools (calc, search, python, wiki) |
+| RAG | Retrieve + Generate | Vector search + generation |
+
+| Metric | Use case |
+|--------|----------|
+| Exact Match | Classification, short answers |
+| Token F1 | Extraction, partial matches |
+| LLM Judge | Generation quality, complex outputs |
+
+| Advanced | Description |
+|----------|-------------|
+| Distillation | Generate training data from GPT-5/Claude |
+| Custom Criteria | Define evaluation rules for LLM Judge |
 
 ---
 
 ## Supported Providers
 
-OpenAI, Anthropic, Google Gemini, Ollama (local). Models fetched dynamically from APIs.
+- **OpenAI** — GPT-5, GPT-5-mini
+- **Anthropic** — Claude 3.5 Sonnet, Claude 3 Haiku
+- **Google** — Gemini Pro, Gemini Flash
+- **Ollama** — Llama 3, Mistral, Qwen (local)
+
+---
+
+## Project Structure
+
+```
+backend/
+├── agent/           # Meta-Agent & selectors
+├── metrics/         # Exact Match, F1, LLM Judge, Semantic
+├── pipelines/       # Pipeline builder & templates
+├── tools/           # ReAct tools (calc, search, python, wiki)
+├── retrieval/       # FAISS & ChromaDB retrievers
+├── distillation/    # Teacher-Student distillation
+├── hybrid_engine.py # Main orchestration engine
+└── app.py           # FastAPI backend
+
+frontend/
+├── src/App.tsx      # React UI
+└── src/api.ts       # API client
+```
 
 ---
 

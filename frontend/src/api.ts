@@ -31,7 +31,7 @@ export interface TaskAnalysis {
 export interface OrchestratorResult {
   artifact_version_id: string;
   compiled_program_id: string;
-  signature_id: string;
+  signature_id?: string;
   eval_results: {
     metric_name?: string;
     metric_value?: number;
@@ -49,8 +49,36 @@ export interface OrchestratorResult {
   };
   react_iterations: number;
   total_cost_usd?: number;
+  total_duration_ms?: number;
   optimizer_type?: string;
+  metric_type?: string;
+  pipeline_type?: string;
   quality_profile?: string;
+  mode?: string;
+  config_summary?: {
+    mode: string;
+    task: {
+      type: string;
+      domain: string;
+      complexity: string;
+    };
+    pipeline: {
+      type: string;
+      template: string;
+      tools: string[];
+      has_retrieval: boolean;
+    };
+    metric: {
+      type: string;
+      uses_llm_judge: boolean;
+    };
+    optimizer: {
+      type: string;
+      max_demos: number;
+    };
+    reasoning: string[];
+  };
+  agent_reasoning?: string[];
   data_splits?: {
     train: number;
     dev: number;
@@ -66,6 +94,25 @@ export interface OrchestratorRequest {
   quality_profile: string;
   optimizer_strategy: string;
   use_agent?: boolean;
+  // Hybrid Engine fields
+  use_hybrid?: boolean;
+  mode?: 'auto' | 'manual';
+  manual_overrides?: {
+    pipeline_type?: string;
+    metric_type?: string;
+    optimizer_type?: string;
+    tools?: string[];
+    llm_judge_model?: string;
+    llm_judge_criteria?: string;
+    // RAG config
+    enable_rag?: boolean;
+    retriever_type?: string;
+    retriever_k?: number;
+    // Distillation config
+    enable_distillation?: boolean;
+    teacher_model?: string;
+    distillation_samples?: number;
+  };
 }
 
 export interface TestArtifactRequest {
@@ -292,6 +339,123 @@ export const api = {
     });
     if (!response.ok) {
       throw new Error(`Failed to import HF dataset: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  // ==================== Hybrid Engine API ====================
+
+  /**
+   * Get Hybrid Engine status
+   */
+  async getHybridStatus(): Promise<{
+    available: boolean;
+    features: {
+      meta_agent: boolean;
+      llm_judge: boolean;
+      multi_stage_pipelines: boolean;
+      react_tools: boolean;
+    };
+  }> {
+    const response = await fetch(`${API_BASE}/hybrid/status`);
+    if (!response.ok) {
+      return { available: false, features: { meta_agent: false, llm_judge: false, multi_stage_pipelines: false, react_tools: false } };
+    }
+    return response.json();
+  },
+
+  /**
+   * Get available pipeline templates
+   */
+  async getTemplates(): Promise<{
+    templates: Array<{
+      name: string;
+      display_name: string;
+      description: string;
+      use_cases: string[];
+      num_stages: number;
+    }>;
+  }> {
+    const response = await fetch(`${API_BASE}/hybrid/templates`);
+    if (!response.ok) {
+      return { templates: [] };
+    }
+    return response.json();
+  },
+
+  /**
+   * Get available tools
+   */
+  async getTools(): Promise<{
+    tools: Array<{
+      name: string;
+      description: string;
+      schema: any;
+    }>;
+  }> {
+    const response = await fetch(`${API_BASE}/hybrid/tools`);
+    if (!response.ok) {
+      return { tools: [] };
+    }
+    return response.json();
+  },
+
+  /**
+   * Get available metrics
+   */
+  async getMetrics(): Promise<{
+    metrics: Array<{
+      type: string;
+      name: string;
+      description: string;
+      best_for: string[];
+      subtypes?: string[];
+    }>;
+  }> {
+    const response = await fetch(`${API_BASE}/hybrid/metrics`);
+    if (!response.ok) {
+      return { metrics: [] };
+    }
+    return response.json();
+  },
+
+  /**
+   * Get available optimizers
+   */
+  async getOptimizers(): Promise<{
+    optimizers: Array<{
+      type: string;
+      name: string;
+      description: string;
+      min_examples: number;
+      speed: string;
+    }>;
+  }> {
+    const response = await fetch(`${API_BASE}/hybrid/optimizers`);
+    if (!response.ok) {
+      return { optimizers: [] };
+    }
+    return response.json();
+  },
+
+  /**
+   * Analyze task without running optimization
+   */
+  async analyzeTask(request: {
+    business_task: string;
+    dataset?: Array<{ input: string; output: string }>;
+  }): Promise<{
+    analysis: any;
+    warnings: string[];
+    reasoning: string[];
+  }> {
+    const response = await fetch(`${API_BASE}/hybrid/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to analyze task: ${response.statusText}`);
     }
     return response.json();
   },
