@@ -21,7 +21,7 @@ sleep 1
 
 # Start backend
 echo -e "${BLUE}Starting backend server...${NC}"
-cd "$SCRIPT_DIR/backend"
+cd "$SCRIPT_DIR"
 
 # Check if venv exists
 if [ ! -d "venv" ]; then
@@ -34,7 +34,7 @@ source venv/bin/activate
 pip install -q -r requirements.txt 2>/dev/null
 
 # Start backend in background
-python app.py &
+python backend/app.py &
 BACKEND_PID=$!
 echo -e "${GREEN}✓ Backend started (PID: $BACKEND_PID)${NC}"
 

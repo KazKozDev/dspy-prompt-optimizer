@@ -1,11 +1,11 @@
 """Helpers for browsing and importing datasets from Hugging Face Hub."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
-def search_hf_datasets(query: str, limit: int = 20) -> List[Dict[str, Any]]:
+def search_hf_datasets(query: str, limit: int = 20) -> list[dict[str, Any]]:
     """Search Hugging Face Hub for datasets.
-    
+
     Returns lightweight metadata for display in catalog.
     """
     try:
@@ -17,22 +17,24 @@ def search_hf_datasets(query: str, limit: int = 20) -> List[Dict[str, Any]]:
 
     try:
         results = list_datasets(search=query, limit=limit)
-        datasets: List[Dict[str, Any]] = []
+        datasets: list[dict[str, Any]] = []
         for ds in results:
-            datasets.append({
-                "id": ds.id,
-                "cardData": ds.cardData or {},
-                "tags": ds.tags or [],
-                "downloads": getattr(ds, "downloads", None),
-                "likes": getattr(ds, "likes", None),
-            })
+            datasets.append(
+                {
+                    "id": ds.id,
+                    "cardData": ds.cardData or {},
+                    "tags": ds.tags or [],
+                    "downloads": getattr(ds, "downloads", None),
+                    "likes": getattr(ds, "likes", None),
+                }
+            )
         return datasets
     except Exception as e:
         print(f"Error searching Hugging Face datasets: {e}")
         raise
 
 
-def _detect_io_fields(example: Dict[str, Any]) -> Optional[Tuple[str, str]]:
+def _detect_io_fields(example: dict[str, Any]) -> tuple[str, str] | None:
     """Heuristically detect input/output columns for business-style datasets."""
     keys = set(example.keys())
 
@@ -61,12 +63,12 @@ def _detect_io_fields(example: Dict[str, Any]) -> Optional[Tuple[str, str]]:
 
 def inspect_hf_dataset(
     dataset_id: str,
-    config_name: Optional[str] = None,
+    config_name: str | None = None,
     split: str = "train",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Inspect a dataset and return available columns plus suggested mapping."""
     try:
-        from datasets import load_dataset, get_dataset_config_names
+        from datasets import get_dataset_config_names, load_dataset
     except ImportError as e:
         raise RuntimeError(
             "datasets library is not installed. Run: pip install datasets"
@@ -108,12 +110,12 @@ def inspect_hf_dataset(
 
 def import_hf_dataset(
     dataset_id: str,
-    config_name: Optional[str] = None,
+    config_name: str | None = None,
     split: str = "train",
     max_items: int = 500,
-    input_key: Optional[str] = None,
-    output_key: Optional[str] = None,
-) -> Dict[str, Any]:
+    input_key: str | None = None,
+    output_key: str | None = None,
+) -> dict[str, Any]:
     """Download a dataset from Hugging Face and convert to DSPy format.
 
     Returns:
@@ -125,7 +127,7 @@ def import_hf_dataset(
         }
     """
     try:
-        from datasets import load_dataset, get_dataset_config_names
+        from datasets import get_dataset_config_names, load_dataset
     except ImportError as e:
         raise RuntimeError(
             "datasets library is not installed. Run: pip install datasets"
@@ -181,7 +183,7 @@ def import_hf_dataset(
             continue
         items.append({"input": str(inp), "output": str(out)})
 
-    meta: Dict[str, Any] = {
+    meta: dict[str, Any] = {
         "dataset_id": dataset_id,
         "config_name": config_name,
         "split": split,

@@ -946,7 +946,7 @@ function App() {
                     >
                       <option value="openai/gpt-5-mini">GPT-5 Mini</option>
                       <option value="openai/gpt-5">GPT-5</option>
-                      <option value="anthropic/claude-3-haiku-20240307">Claude Haiku</option>
+                      <option value="anthropic/claude-haiku-4-5-20251015">Claude Haiku</option>
                     </select>
                     <textarea
                       value={llmJudgeCriteria}
@@ -983,7 +983,7 @@ function App() {
                           className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none"
                         >
                           <option value="openai/gpt-5">GPT-5 (teacher)</option>
-                          <option value="anthropic/claude-3-5-sonnet-20241022">Claude Sonnet</option>
+                          <option value="anthropic/claude-sonnet-4-5-20250929">Claude Sonnet</option>
                         </select>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] text-white/50">Samples:</span>

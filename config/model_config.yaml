@@ -1,0 +1,34 @@
+models:
+  default_provider: openai
+  defaults:
+    openai_chat: gpt-5-mini
+    openai_optimizer: gpt-5-2-instant-20251211
+    anthropic_chat: claude-sonnet-4-5-20250929
+    gemini_chat: gemini-2-5-flash
+    ollama_chat: llama3.2:3b
+    semantic_model: all-MiniLM-L6-v2
+  parameters:
+    temperature: 0.2
+    max_tokens: 2048
+
+agent:
+  temperature: 0.1
+  max_iterations: 20
+
+judge:
+  temperature: 0.0
+
+endpoints:
+  ollama_base_url: http://localhost:11434
+
+rate_limits:
+  requests_per_minute: 50
+  tokens_per_minute: 100000
+
+cache:
+  enabled: true
+  ttl_seconds: 3600
+  cache_dir: data/cache
+
+logging:
+  config_path: config/logging_config.yaml

@@ -1,26 +1,25 @@
-"""
-DSPy Meta-Agent package.
+"""DSPy Meta-Agent package.
 Provides intelligent auto-configuration for DSPy pipelines.
 """
 
 from .config import (
-    AgentConfig, 
-    PipelineType, 
-    MetricType, 
-    OptimizerType,
-    TaskType,
+    AgentConfig,
     ComplexityLevel,
-    TaskAnalysis,
-    PipelineConfig,
     MetricConfig,
+    MetricType,
     OptimizerConfig,
+    OptimizerType,
+    PipelineConfig,
+    PipelineType,
+    TaskAnalysis,
+    TaskType,
 )
 from .meta_agent import MetaAgent, create_meta_agent
 
 __all__ = [
     "AgentConfig",
     "PipelineType",
-    "MetricType", 
+    "MetricType",
     "OptimizerType",
     "TaskType",
     "ComplexityLevel",

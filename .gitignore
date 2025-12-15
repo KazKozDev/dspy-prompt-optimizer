@@ -40,7 +40,8 @@ logs/
 
 # Data artifacts (keep structure, ignore content)
 backend/data/artifacts/*
-!backend/data/artifacts/.gitkeep
+data/artifacts/*
+!data/artifacts/.gitkeep
 data/datasets/*
 !data/datasets/.gitkeep
 

@@ -1,17 +1,13 @@
-"""
-Metric Selector - Selects appropriate evaluation metric.
-"""
+"""Metric Selector - Selects appropriate evaluation metric."""
 
-from typing import Optional
+from utils.settings import get_settings
 
-from ..config import TaskAnalysis, MetricConfig, MetricType, TaskType
+from ..config import MetricConfig, MetricType, TaskAnalysis, TaskType
 
 
 class MetricSelector:
-    """
-    Selects evaluation metric based on task analysis.
-    """
-    
+    """Selects evaluation metric based on task analysis."""
+
     TASK_METRIC_MAP = {
         TaskType.CLASSIFICATION: MetricType.EXACT_MATCH,
         TaskType.EXTRACTION: MetricType.TOKEN_F1,
@@ -23,75 +19,71 @@ class MetricSelector:
         TaskType.ROUTING: MetricType.EXACT_MATCH,
         TaskType.CODE: MetricType.LLM_JUDGE,
     }
-    
+
     def select(
         self,
         task_analysis: TaskAnalysis,
         quality_profile: str = "BALANCED",
-        judge_model: Optional[str] = None
+        judge_model: str | None = None,
     ) -> MetricConfig:
-        """
-        Select metric configuration.
-        
+        """Select metric configuration.
+
         Args:
             task_analysis: Result of task analysis
             quality_profile: Quality profile (affects LLM judge usage)
             judge_model: Optional specific model for LLM judge
-            
+
         Returns:
             MetricConfig with selected settings
         """
         metric_type = self._select_metric_type(task_analysis, quality_profile)
-        
+
         llm_judge_model = None
         llm_judge_criteria = None
-        
+
         if metric_type == MetricType.LLM_JUDGE:
             llm_judge_model = judge_model or self._select_judge_model(quality_profile)
             llm_judge_criteria = self._generate_criteria(task_analysis)
-        
+
         semantic_model = None
         if metric_type == MetricType.SEMANTIC_SIMILARITY:
-            semantic_model = "all-MiniLM-L6-v2"
-        
+            semantic_model = get_settings().model_defaults.semantic_model
+
         return MetricConfig(
             metric_type=metric_type,
             llm_judge_model=llm_judge_model,
             llm_judge_criteria=llm_judge_criteria,
-            semantic_model=semantic_model
+            semantic_model=semantic_model,
         )
-    
+
     def _select_metric_type(
-        self,
-        task_analysis: TaskAnalysis,
-        quality_profile: str
+        self, task_analysis: TaskAnalysis, quality_profile: str
     ) -> MetricType:
         """Select metric type based on task and quality profile."""
         default_metric = self.TASK_METRIC_MAP.get(
-            task_analysis.task_type,
-            MetricType.TOKEN_F1
+            task_analysis.task_type, MetricType.TOKEN_F1
         )
-        
+
         if quality_profile == "FAST_CHEAP":
             if default_metric == MetricType.LLM_JUDGE:
                 return MetricType.TOKEN_F1
-        
+
         if quality_profile == "HIGH_QUALITY":
             if task_analysis.task_type in [TaskType.QA, TaskType.EXTRACTION]:
                 return MetricType.LLM_JUDGE
-        
+
         return default_metric
-    
+
     def _select_judge_model(self, quality_profile: str) -> str:
         """Select model for LLM judge."""
         if quality_profile == "HIGH_QUALITY":
-            return "openai/gpt-4o"
-        return "openai/gpt-4o-mini"
-    
+            return "openai/gpt-5"
+        return f"openai/{get_settings().model_defaults.openai_chat}"
+
     def _generate_criteria(self, task_analysis: TaskAnalysis) -> str:
         """Generate evaluation criteria for LLM judge."""
         task_type = task_analysis.task_type
-        
+
         criteria_map = {
             TaskType.SUMMARIZATION: """
 Evaluate the summary based on:
@@ -129,10 +121,13 @@ Evaluate the answer based on:
 4. Relevance: Does it focus on what was asked?
 """,
         }
-        
-        return criteria_map.get(task_type, """
+
+        return criteria_map.get(
+            task_type,
+            """
 Evaluate the response based on:
 1. Correctness: Is it accurate?
 2. Completeness: Is it thorough?
 3. Relevance: Does it address the task?
-""")
+""",
+        )

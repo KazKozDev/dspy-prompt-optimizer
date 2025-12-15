@@ -1,11 +1,9 @@
-"""
-Agent Selectors - Components that select configuration based on task analysis.
-"""
+"""Agent Selectors - Components that select configuration based on task analysis."""
 
-from .task_analyzer import TaskAnalyzer
-from .pipeline_selector import PipelineSelector
 from .metric_selector import MetricSelector
 from .optimizer_selector import OptimizerSelector
+from .pipeline_selector import PipelineSelector
+from .task_analyzer import TaskAnalyzer
 from .tool_selector import ToolSelector
 
 __all__ = [

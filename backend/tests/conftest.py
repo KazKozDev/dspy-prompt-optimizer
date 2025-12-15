@@ -1,13 +1,15 @@
-"""
-Pytest configuration and fixtures.
-"""
+"""Pytest configuration and fixtures."""
+
+import os
+import sys
+
+# Add repo root and backend to path
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BACKEND_DIR = os.path.join(REPO_ROOT, "backend")
+sys.path.insert(0, REPO_ROOT)
+sys.path.insert(0, BACKEND_DIR)
 
 import pytest
-import sys
-import os
-
-# Add backend to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 @pytest.fixture

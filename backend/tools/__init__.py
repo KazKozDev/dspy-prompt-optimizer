@@ -1,5 +1,4 @@
-"""
-DSPy Tools package.
+"""DSPy Tools package.
 Provides tools for ReAct agents.
 """
 

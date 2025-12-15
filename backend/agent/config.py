@@ -1,24 +1,25 @@
-"""
-Agent Configuration - Central config dataclass for DSPy Meta-Agent.
+"""Agent Configuration - Central config dataclass for DSPy Meta-Agent.
 Holds all decisions made by the agent (or manually by user).
 """
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class PipelineType(str, Enum):
     """Types of DSPy pipelines."""
-    PREDICT = "predict"                    # Simple dspy.Predict
+
+    PREDICT = "predict"  # Simple dspy.Predict
     CHAIN_OF_THOUGHT = "chain_of_thought"  # dspy.ChainOfThought
-    REACT = "react"                        # dspy.ReAct with tools
-    RAG = "rag"                            # Retrieve + Generate
-    MULTI_STAGE = "multi_stage"            # Custom multi-step pipeline
+    REACT = "react"  # dspy.ReAct with tools
+    RAG = "rag"  # Retrieve + Generate
+    MULTI_STAGE = "multi_stage"  # Custom multi-step pipeline
 
 
 class MetricType(str, Enum):
     """Types of evaluation metrics."""
+
     EXACT_MATCH = "exact_match"
     TOKEN_F1 = "token_f1"
     SEMANTIC_SIMILARITY = "semantic_similarity"
@@ -28,6 +29,7 @@ class MetricType(str, Enum):
 
 class OptimizerType(str, Enum):
     """Types of DSPy optimizers."""
+
     BOOTSTRAP_FEW_SHOT = "BootstrapFewShot"
     BOOTSTRAP_RANDOM_SEARCH = "BootstrapFewShotWithRandomSearch"
     MIPRO_V2 = "MIPROv2"
@@ -37,6 +39,7 @@ class OptimizerType(str, Enum):
 
 class TaskType(str, Enum):
     """Types of NLP tasks."""
+
     CLASSIFICATION = "classification"
     EXTRACTION = "extraction"
     SUMMARIZATION = "summarization"
@@ -50,6 +53,7 @@ class TaskType(str, Enum):
 
 class ComplexityLevel(str, Enum):
     """Task complexity levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -58,20 +62,21 @@ class ComplexityLevel(str, Enum):
 @dataclass
 class TaskAnalysis:
     """Result of task analysis."""
+
     task_type: TaskType = TaskType.REASONING
     domain: str = "general"
     complexity: ComplexityLevel = ComplexityLevel.MEDIUM
-    input_fields: List[str] = field(default_factory=lambda: ["text"])
-    output_fields: List[str] = field(default_factory=lambda: ["result"])
-    
+    input_fields: list[str] = field(default_factory=lambda: ["text"])
+    output_fields: list[str] = field(default_factory=lambda: ["result"])
+
     needs_retrieval: bool = False
     needs_chain_of_thought: bool = False
     needs_tools: bool = False
     needs_multi_stage: bool = False
-    
-    suggested_tools: List[str] = field(default_factory=list)
-    suggested_pipeline_template: Optional[str] = None
-    
+
+    suggested_tools: list[str] = field(default_factory=list)
+    suggested_pipeline_template: str | None = None
+
     confidence: float = 0.8
     reasoning: str = ""
 
@@ -79,75 +84,77 @@ class TaskAnalysis:
 @dataclass
 class PipelineConfig:
     """Configuration for the DSPy pipeline."""
+
     pipeline_type: PipelineType = PipelineType.CHAIN_OF_THOUGHT
-    template_name: Optional[str] = None  # e.g., "outline_draft_revise"
-    
-    stages: List[Dict[str, Any]] = field(default_factory=list)
-    
-    retriever_type: Optional[str] = None  # "faiss", "chroma", "colbert"
+    template_name: str | None = None  # e.g., "outline_draft_revise"
+
+    stages: list[dict[str, Any]] = field(default_factory=list)
+
+    retriever_type: str | None = None  # "faiss", "chroma", "colbert"
     retriever_k: int = 5
-    
-    tools: List[str] = field(default_factory=list)  # ["calculator", "web_search"]
+
+    tools: list[str] = field(default_factory=list)  # ["calculator", "web_search"]
 
 
 @dataclass
 class MetricConfig:
     """Configuration for evaluation metrics."""
+
     metric_type: MetricType = MetricType.TOKEN_F1
-    
-    llm_judge_model: Optional[str] = None  # Model for LLM-as-judge
-    llm_judge_criteria: Optional[str] = None  # Custom criteria
-    
-    semantic_model: Optional[str] = None  # Embedding model for semantic similarity
-    
-    custom_metric_code: Optional[str] = None  # Python code for custom metric
+
+    llm_judge_model: str | None = None  # Model for LLM-as-judge
+    llm_judge_criteria: str | None = None  # Custom criteria
+
+    semantic_model: str | None = None  # Embedding model for semantic similarity
+
+    custom_metric_code: str | None = None  # Python code for custom metric
 
 
 @dataclass
 class OptimizerConfig:
     """Configuration for DSPy optimizer."""
+
     optimizer_type: OptimizerType = OptimizerType.BOOTSTRAP_FEW_SHOT
-    
+
     max_bootstrapped_demos: int = 4
     max_labeled_demos: int = 16
     max_rounds: int = 1
     num_candidates: int = 16
-    
-    teacher_model: Optional[str] = None  # For distillation
-    student_model: Optional[str] = None  # For distillation
+
+    teacher_model: str | None = None  # For distillation
+    student_model: str | None = None  # For distillation
     distillation_samples: int = 100
 
 
 @dataclass
 class AgentConfig:
-    """
-    Central configuration for DSPy Meta-Agent.
-    
+    """Central configuration for DSPy Meta-Agent.
+
     Contains all decisions about how to build and optimize the DSPy program.
     Can be auto-generated by the agent or manually configured by user.
     """
-    
+
     mode: str = "auto"  # "auto" or "manual"
-    
+
     business_task: str = ""
     target_model: str = ""
     optimizer_model: str = ""
-    
+
     task_analysis: TaskAnalysis = field(default_factory=TaskAnalysis)
     pipeline_config: PipelineConfig = field(default_factory=PipelineConfig)
     metric_config: MetricConfig = field(default_factory=MetricConfig)
     optimizer_config: OptimizerConfig = field(default_factory=OptimizerConfig)
-    
+
     quality_profile: str = "BALANCED"  # FAST_CHEAP, BALANCED, HIGH_QUALITY
-    
+
     # Distillation settings
     enable_distillation: bool = False
-    teacher_model: str = "openai/gpt-4o"
+    teacher_model: str = "openai/gpt-5"
     distillation_samples: int = 100
-    
-    agent_reasoning: List[str] = field(default_factory=list)
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    agent_reasoning: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert config to dictionary for serialization."""
         return {
             "mode": self.mode,
@@ -191,9 +198,9 @@ class AgentConfig:
             },
             "agent_reasoning": self.agent_reasoning,
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AgentConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "AgentConfig":
         """Create config from dictionary."""
         config = cls()
         config.mode = data.get("mode", "auto")
@@ -201,7 +208,7 @@ class AgentConfig:
         config.target_model = data.get("target_model", "")
         config.optimizer_model = data.get("optimizer_model", "")
         config.quality_profile = data.get("quality_profile", "BALANCED")
-        
+
         if "task_analysis" in data:
             ta = data["task_analysis"]
             config.task_analysis = TaskAnalysis(
@@ -218,7 +225,7 @@ class AgentConfig:
                 confidence=ta.get("confidence", 0.8),
                 reasoning=ta.get("reasoning", ""),
             )
-        
+
         if "pipeline_config" in data:
             pc = data["pipeline_config"]
             config.pipeline_config = PipelineConfig(
@@ -229,7 +236,7 @@ class AgentConfig:
                 retriever_k=pc.get("retriever_k", 5),
                 tools=pc.get("tools", []),
             )
-        
+
         if "metric_config" in data:
             mc = data["metric_config"]
             config.metric_config = MetricConfig(
@@ -237,17 +244,19 @@ class AgentConfig:
                 llm_judge_model=mc.get("llm_judge_model"),
                 llm_judge_criteria=mc.get("llm_judge_criteria"),
             )
-        
+
         if "optimizer_config" in data:
             oc = data["optimizer_config"]
             config.optimizer_config = OptimizerConfig(
-                optimizer_type=OptimizerType(oc.get("optimizer_type", "BootstrapFewShot")),
+                optimizer_type=OptimizerType(
+                    oc.get("optimizer_type", "BootstrapFewShot")
+                ),
                 max_bootstrapped_demos=oc.get("max_bootstrapped_demos", 4),
                 max_labeled_demos=oc.get("max_labeled_demos", 16),
                 teacher_model=oc.get("teacher_model"),
                 student_model=oc.get("student_model"),
             )
-        
+
         config.agent_reasoning = data.get("agent_reasoning", [])
-        
+
         return config

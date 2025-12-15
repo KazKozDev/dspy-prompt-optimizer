@@ -1,0 +1,146 @@
+system_prompts:
+  default: |
+    You are a helpful assistant.
+
+analysis_prompts:
+  mcp_agent_analyze_task: |
+    You are a DSPy optimization expert. Analyze this task and return JSON.
+
+    Task: {task}
+
+    Analyze and return JSON with these fields:
+    {{
+        "task_type": "classification|extraction|summarization|question_answering|generation",
+        "complexity": "low|medium|high",
+        "needs_cot": true/false,
+        "input_field": "suggested input field name",
+        "output_field": "suggested output field name",
+        "metric_type": "exact_match|contains|f1",
+        "reasoning": "brief explanation of your analysis"
+    }}
+
+    Metric selection guide:
+    - classification tasks with fixed categories -> exact_match
+    - extraction/generation tasks -> contains
+    - tasks requiring partial matching -> f1
+
+    Return ONLY valid JSON.
+
+  mcp_langchain_agent_analyze_task: |
+    Analyze this business task for DSPy optimization.
+
+    Task: {task}
+
+    Return a JSON object with:
+    - task_type: one of [classification, extraction, summarization, question_answering, generation, general]
+    - complexity: one of [low, medium, high]
+    - needs_cot: boolean - whether Chain of Thought reasoning would help
+    - input_field_name: suggested name for input field (e.g., "text", "question", "document")
+    - output_field_name: suggested name for output field (e.g., "category", "answer", "summary")
+
+    Return ONLY valid JSON, no markdown or explanation.
+
+  langchain_agent_analyze_business_goal: |
+    Analyze this business task and return JSON:
+
+    Task: {task}
+
+    Return JSON with:
+    - task_type: classification/extraction/summarization/reasoning/routing/RAG/hybrid
+    - domain: legal/finance/support/medical/general
+    - input_roles: list of input field names (e.g., ["text"] or ["question", "context"])
+    - output_roles: list of output field names (e.g., ["category"] or ["answer"])
+    - needs_retrieval: boolean
+    - needs_chain_of_thought: boolean
+    - complexity_level: low/medium/high
+
+    Return ONLY valid JSON, no markdown.
+
+llm_judge_prompts:
+  correctness: |
+    You are an expert judge evaluating the correctness of an AI response.
+
+    Task: {task}
+
+    Expected Answer: {expected}
+
+    AI Response: {predicted}
+
+    Evaluate if the AI response is correct. Consider:
+    1. Does it answer the question/task correctly?
+    2. Is the information accurate?
+    3. Does it match the expected answer in meaning (not necessarily exact wording)?
+
+    Respond with a JSON object:
+    {{"score": <0.0-1.0>, "reasoning": "<brief explanation>"}}
+
+    Score guidelines:
+    - 1.0: Completely correct, matches expected answer
+    - 0.7-0.9: Mostly correct, minor differences
+    - 0.4-0.6: Partially correct
+    - 0.1-0.3: Mostly incorrect
+    - 0.0: Completely wrong
+
+  faithfulness: |
+    You are an expert judge evaluating the faithfulness of an AI response to source context.
+
+    Context: {context}
+
+    Question: {question}
+
+    AI Response: {predicted}
+
+    Evaluate if the AI response is faithful to the context. Consider:
+    1. Is all information in the response supported by the context?
+    2. Does it avoid hallucinations or made-up facts?
+    3. Does it accurately represent the source material?
+
+    Respond with a JSON object:
+    {{"score": <0.0-1.0>, "reasoning": "<brief explanation>"}}
+
+    Score guidelines:
+    - 1.0: Completely faithful, all claims supported
+    - 0.7-0.9: Mostly faithful, minor unsupported details
+    - 0.4-0.6: Partially faithful, some hallucinations
+    - 0.1-0.3: Mostly unfaithful
+    - 0.0: Completely unfaithful/hallucinated
+
+  coherence: |
+    You are an expert judge evaluating the coherence and quality of an AI response.
+
+    Task: {task}
+
+    AI Response: {predicted}
+
+    Evaluate the response quality. Consider:
+    1. Is it well-structured and organized?
+    2. Is it clear and easy to understand?
+    3. Is it complete and addresses the task fully?
+    4. Is the language appropriate and professional?
+
+    Respond with a JSON object:
+    {{"score": <0.0-1.0>, "reasoning": "<brief explanation>"}}
+
+    Score guidelines:
+    - 1.0: Excellent quality, clear and complete
+    - 0.7-0.9: Good quality, minor issues
+    - 0.4-0.6: Acceptable quality, some issues
+    - 0.1-0.3: Poor quality
+    - 0.0: Very poor, incoherent
+
+  custom: |
+    You are an expert judge evaluating an AI response.
+
+    Task: {task}
+
+    Expected Answer: {expected}
+
+    AI Response: {predicted}
+
+    Evaluation Criteria:
+    {criteria}
+
+    Based on the criteria above, evaluate the AI response.
+
+    Respond with a JSON object:
+    {{"score": <0.0-1.0>, "reasoning": "<brief explanation>"}}
